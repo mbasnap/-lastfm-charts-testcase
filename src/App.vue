@@ -1,60 +1,34 @@
 <template>
-  <v-app>
-    <v-app-bar
-      app
-      color="primary"
-      dark
-    >
-      <div class="d-flex align-center">
-        <v-img
-          alt="Vuetify Logo"
-          class="shrink mr-2"
-          contain
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-dark.png"
-          transition="scale-transition"
-          width="40"
-        />
+<!-- App.vue -->
+<v-app>
+  <v-app-bar app>
+    <v-toolbar-title>Top-Music</v-toolbar-title>
+    <v-spacer></v-spacer>
+      <v-btn v-for="link in ['artists', 'tracks']" :key="link" text
+      @click="$router.push(`/${link}`)"> {{ link }} </v-btn>
+    <v-spacer></v-spacer>
+    
+      <v-progress-linear v-show="loading" :active="loading" :indeterminate="loading" absolute bottom color="deep-purple accent-4"></v-progress-linear>
+  </v-app-bar>
+  <v-content>
+      <router-view></router-view>
+  </v-content>
 
-        <v-img
-          alt="Vuetify Name"
-          class="shrink mt-1 hidden-sm-and-down"
-          contain
-          min-width="100"
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-name-dark.png"
-          width="100"
-        />
-      </div>
-
-      <v-spacer></v-spacer>
-
-      <v-btn
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
-        text
-      >
-        <span class="mr-2">Latest Release</span>
-        <v-icon>mdi-open-in-new</v-icon>
-      </v-btn>
-    </v-app-bar>
-
-    <v-content>
-      <HelloWorld/>
-    </v-content>
-  </v-app>
+  <v-footer padless>
+    <v-row justify="center" class="py-4 white--text">
+        {{ new Date().getFullYear() }} — <strong> Vuetify </strong>
+    </v-row>
+  </v-footer>
+</v-app>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld';
+import { mapGetters } from 'vuex'
 
 export default {
   name: 'App',
-
-  components: {
-    HelloWorld,
-  },
-
-  data: () => ({
-    //
-  }),
-};
+  computed: {
+    ...mapGetters(['loading'])
+  }
+}
 </script>
