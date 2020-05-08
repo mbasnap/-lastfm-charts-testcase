@@ -20,7 +20,7 @@
         {{ new Date().getFullYear() }} — <strong> Vuetify </strong>
     </v-row>
   </v-footer>
-    <err-snack-bar></err-snack-bar>
+  <err-snack-bar></err-snack-bar>
 </v-app>
 </template>
 
