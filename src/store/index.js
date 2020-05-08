@@ -1,6 +1,5 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import { lastfm } from '../plugins/lastfm'
 Vue.use(Vuex)
 
 export default new Vuex.Store({
@@ -8,8 +7,10 @@ export default new Vuex.Store({
     loading: false,
     artists: [],
     tracks: [],
-    albums: [],
-    album: {}
+    artist: {},
+    album: {},
+    pages: {},
+    err: ''
   },
   getters: {
     artists({ artists }){
@@ -18,14 +19,20 @@ export default new Vuex.Store({
     tracks({ tracks }){
       return tracks
     },
-    albums({ albums }){
-      return albums
+    artist({ artist }){
+      return artist
     },
     album({ album }){
       return album
     },
+    pages({ pages }){
+      return pages
+    },
     loading({ loading }){
       return loading
+    },
+    err({ err }){
+      return err
     }
   },
   mutations: {
@@ -35,61 +42,37 @@ export default new Vuex.Store({
     tracks(state, v){
       state.tracks = v
     },
-    albums(state, v){
-      state.albums = v
+    artist(state, v){
+      state.artist = v
     },
     album(state, v){
       state.album = v
     },
+    pages(state, v = {}){
+      state.pages = {...state.pages, ...v}
+    },
     loading(state, v){
       state.loading = v
+    },
+    err(state, v){
+      state.err = v
     }
   },
   actions: {
-    update({ commit }, [name, value]){
-      commit(name, value)
-      commit('loading', false)
+    hideErr({ commit }) {
+      commit('err', '')
     },
-    getTopArtist({ dispatch, commit }){
+    load({ commit }, [action, ...params]){
       commit('loading', true)
-      return lastfm.chart.getTopArtist().then(({ data }) => {
-        dispatch('update', ['artists', {...data.artists}.artist])        
-      }).catch(err => {
-        console.log(err);
-        
-      })
-    },
-    getTopTracks({ commit }, page){
-      commit('loading', true)
-      return lastfm.chart.getTopTracks(page).then(({ data }) => {
+      return action(...params).then(v => {
         commit('loading', false)
-        return {...data.tracks}.track
-      }).catch(err => {
-        console.log(err);
-        
-      })
-    },
-    getTopAlbums({ dispatch, commit }, artist){
-      commit('loading', true)
-      return lastfm.getTopAlbums(artist).then(({ data }) => {
-        dispatch('update', ['albums', {...data.topalbums}.album])        
-      }).catch(err => {
-        console.log(err);
-        
-      })
-    },
-    getAlbumInfo({ dispatch, commit }, [artist, album]){
-      commit('loading', true)
-      return lastfm.getAlbumInfo(artist, album).then(({ data }) => {
-        console.log(data);
-        
-        dispatch('update', ['album', {...data.album}])        
-      }).catch(err => {
-        console.log(err);
-        
+        return v
+      }).catch(({ response }) => { 
+        const { message } = response.data
+        commit('loading', false)
+        commit('err', message)
       })
     }
   },
-  modules: {
-  }
+  modules: {}
 })

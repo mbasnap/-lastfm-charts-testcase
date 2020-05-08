@@ -1,7 +1,7 @@
 <template>
 <v-container fluid>
     <v-breadcrumbs :items="breadcrumbs" ></v-breadcrumbs>
-    <v-row>
+    <v-row :style="{'flex-direction': width < 800 ? 'column' : 'row'}">
         <v-col>
         <v-skeleton-loader :loading="loading" type="card">
 
@@ -32,9 +32,10 @@
             </v-card>
 </v-skeleton-loader>
         </v-col>
-        <v-col>
+        <v-col >
             <v-skeleton-loader :loading="loading" type="table-tbody">
-            <v-data-table :headers="headers" :items="tracks" hide-default-footer></v-data-table>
+            <v-data-table :headers="[{ value: 'index', text: '№'}, { align: 'start', text: 'name', value: 'name'}, { align: 'end', text: 'duration', value: 'duration' }]"
+            :items="tracks" hide-default-footer></v-data-table>
             </v-skeleton-loader>
         </v-col>
     </v-row>
@@ -42,53 +43,57 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from 'vuex'
+import { mapGetters } from 'vuex'
+import {infiniteHandler, img} from '../mixins'
 export default {
-    created() {
-        const { artist, album } = this.$route.params
-        this.getAlbumInfo([artist, album])
-    },
-    data(){
-        return {
-            headers: [
-                { value: 'index'},
-                { align: 'start', value: 'name'},
-                { align: 'end', text: "duration", value: 'duration' }
-            ],
-            breadcrumbs: [
-                { text: this.$route.params.artist.toUpperCase(),
-                    disabled: false,
-                    href: `/music/${this.$route.params.artist}`
-                },
-                { text: this.$route.params.album.toUpperCase() }
-            ],
-        }
-    },
+    mixins: [infiniteHandler, img],
     computed: {
-        ...mapGetters(['album', 'loading']),
-        published({ album }){
-            return {...album.wiki}.published
+        ...mapGetters(['album']),
+        value({ album, key }) {
+            return { ...album[key] }
         },
-        tracks({ album }){
-            return ({...album.tracks}.track || [])
+        published({ value }){
+            return {...value.wiki}.published
+        },
+        tracks({ value }){
+            return ({...value.tracks}.track || [])
                 .map((v, i) => ({...v, index: i + 1 }))
         },
-        info({ album }){
-            const { playcount, listeners } = album
+        info({ value }){
+            const { playcount, listeners } = value
             return { playcount, listeners }
         },
-        img({ album }){
-            return (album.image || []).reduce((cur, v) => ({ ...cur, [v.size]: v['#text']}), {})
+        action() {
+            return this.$lastfm.getAlbumInfo
+        },
+        breadcrumbs({ params }) {
+            const { artist, album } = params
+            return [
+                { text: artist.toUpperCase(), disabled: false, href: `#/music/${artist}` },
+                { text: album.toUpperCase() }
+            ]
+        },
+        key({ params }){
+            const { artist, album } = params
+            return `${artist}-${album}`
+        },
+        width({ breakpoint }) {            
+            return breakpoint.width
         }
     },
     methods: {
-        ...mapActions(['getAlbumInfo']),
-        getItem({ image, name: title, playcount }){
-            const info = { playcount }
+        loadItems() {
+            const { action, params } = this            
+            const { artist, album } = params
+            return this.load([action, artist, album]).then(this.setValues)
+        },
+        getValue({ name: title, image, listeners, playcount }){
+            const info = { listeners, playcount }
             return { title, image, info }
         },
-        goTo(path, { title: name }) {
-            this.$router.push(`/${path}/${name.toLowerCase()}`)
+        setValues(value) {
+            const { album, key } = this
+            this.$store.commit('album', {...album, [key]: value })
         }
     }
 }

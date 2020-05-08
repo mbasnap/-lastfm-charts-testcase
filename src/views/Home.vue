@@ -1,46 +1,42 @@
 <template>
     <v-container fluid>
         <v-row>
-        <v-col v-for="(item, i) in items" :key="i" cols="3">
-            <tile-item :value="item" @click="goTo('music', item)"></tile-item>
+        <v-col v-for="(item, i) in values" :key="i" :cols="cols">
+            <tile-item :value="getValue(item)"
+            @click="goTo('music', getValue(item).title)"></tile-item>
         </v-col>
+        <infinite-loading @infinite="infiniteHandler"></infinite-loading>
         </v-row>
     </v-container>
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex'
-import TileItem from '../components/TileItem'
+import { mapGetters } from 'vuex'
+import infiniteHandler from '../mixins/infiniteHandler'
 export default {
-    components: { TileItem },
-    created(){
-        this.getTopArtist()
-    },
-    data(){
-        return {
-            data: {}
-        }
-    },
+    mixins: [infiniteHandler],
     computed: {
-        ...mapGetters(['artists']),
-        // artists({ data }){
-        //     return data.artist || []
-        // },
-        items({ artists, getItem }) {
-            return artists.map(getItem)
+        ...mapGetters({ values: 'artists' }),
+        action() {
+            return this.$lastfm.chart.getTopArtists
+        },
+        page({ pages }) {
+            return pages.artists || 1
         }
     },
     methods: {
-        ...mapActions(['getTopArtist']),
-        getItem({ name: title, image, listeners, playcount }){
+        getValue({ name: title, image, listeners, playcount }){
             const info = { listeners, playcount }
             return { title, image, info }
         },
-        goTo(path, { title: name }) {
-            this.$router.push(`/${path}/${name.toLowerCase()}`)
+        setValues({ '@attr': attr, artist = [] }) {
+            const { $store, page, values } = this
+            if (page > {...attr}.totalPages) return
+            $store.commit('pages', { artists: page + 1 })
+            $store.commit('artists', [...values, ...artist])
+            return true
         }
     }
-
 }
 </script>
 

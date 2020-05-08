@@ -1,8 +1,9 @@
 <template>
     <v-container fluid>
         <v-row>
-        <v-col v-for="(item, i) in items" :key="i" cols="3">
-            <tile-item :value="item" @click="goTo('music', item)"></tile-item>
+        <v-col v-for="(item, i) in values" :key="i" :cols="cols">
+            <tile-item :value="getValue(item)"
+            @click="goTo('music', getValue(item).title)"></tile-item>
         </v-col>
         <infinite-loading @infinite="infiniteHandler"></infinite-loading>
         </v-row>
@@ -10,47 +11,33 @@
 </template>
 
 <script>
-import TileItem from '../components/TileItem'
-import { mapActions } from 'vuex'
+import { mapGetters } from 'vuex'
+import infiniteHandler from '../mixins/infiniteHandler'
 export default {
-    components: { TileItem },
-    created(){
-        this.getTopTracks(this.page).then(v => {
-            this.tracks = v
-        })
-    },
-    data() {
-        return {
-            page: 1,
-            tracks: []
-        }
-    },
+    mixins: [infiniteHandler],
     computed: {
-        items({ tracks, getItem }) {
-            return tracks.map(getItem)
+        ...mapGetters({ values: 'tracks' }),
+        action() {
+            return this.$lastfm.chart.getTopTracks
+        },
+        page({ pages }) {
+            return pages.tracks || 1
         }
     },
     methods: {
-        ...mapActions(['getTopTracks']),
-        infiniteHandler($state) {
-            this.getTopTracks(this.page).then(v => {
-                if (v.length) {
-                    this.page += 1
-                    this.tracks.push(...v);
-                    $state.loaded()
-                } else $state.complete()
-            })
-        },
-        getItem({ artist, name: subtitle, image, listeners, playcount }){
+        getValue({ artist, name: subtitle, image, listeners, playcount }){
             const { name: title } = {...artist}
             const info = { listeners, playcount }
             return { title, subtitle, image, info }
         },
-        goTo(path, { title: name }) {
-            this.$router.push(`/${path}/${name.toLowerCase()}`)
+        setValues({ '@attr': attr, track = [] }) {
+            const { $store, page, values } = this
+            if (page > {...attr}.totalPages) return
+            $store.commit('pages', { tracks: page + 1 })
+            $store.commit('tracks', [...values, ...track])
+            return true
         }
     }
-
 }
 </script>
 

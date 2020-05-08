@@ -2,41 +2,55 @@
     <v-container fluid>
         <v-breadcrumbs :items="breadcrumbs" ></v-breadcrumbs>
         <v-row>
-        <v-col v-for="(item, i) in items" :key="i" cols="3">
-            <tile-item :value="item" @click="goTo($route.params.artist, item)"></tile-item>
+        <v-col v-for="(item, i) in values" :key="i" :cols="cols">
+            <tile-item :value="getValue(item)"
+            @click="goTo(params.artist, getValue(item).title)"></tile-item>
         </v-col>
+        <infinite-loading @infinite="infiniteHandler"></infinite-loading>
         </v-row>
     </v-container>
 </template>
 
 <script>
-import TileItem from '../components/TileItem'
-import { mapGetters, mapActions } from 'vuex'
+import { mapGetters } from 'vuex'
+import infiniteHandler from '../mixins/infiniteHandler'
 export default {
-    components: { TileItem },
-    created() {
-        this.getTopAlbums(this.$route.params.artist)
-    },
-    data(){
-        return {
-            breadcrumbs: [
-                { text: this.$route.params.artist.toUpperCase() },
+    mixins: [infiniteHandler],
+    computed: {
+        ...mapGetters(['artist']),
+        action() {
+            return this.$lastfm.getTopAlbums
+        },
+        page({ artist, params }) {
+            return {...artist[params.artist]}.page || 1
+        },
+        values({ artist, params }) {
+            return {...artist[params.artist]}.albums || []
+        },
+        breadcrumbs({ params }) {
+            return [
+                { text: params.artist.toUpperCase() },
             ]
         }
     },
-    computed: {
-        ...mapGetters(['albums']),
-        items({ albums, getItem }) {
-            return albums.map(getItem)
-        }
-    },
     methods: {
-        ...mapActions(['getTopAlbums']),
-        getItem({ image, name: title, playcount }){
+        loadItems() {
+            const { action, params, page } = this
+            return this.load([action, params.artist, page]).then(this.setValues)
+        },
+        getValue({ name: title, image, playcount }){
             const info = { playcount }
             return { title, image, info }
         },
-        goTo(path, { title: name }) {           
+        setValues({ '@attr': attr, album }) {
+            const { $store, params, page, values } = this
+            if (page > attr.totalPages) return    
+            const albums = [...values, ...album]
+            const artist = {...this.artist, [params.artist]: { albums, page:  page + 1 }}
+            $store.commit('artist', artist)
+            return true
+        },
+        goTo(path, name) {           
             this.$router.push(`${path}/${name.toLowerCase()}`)
         }
     }

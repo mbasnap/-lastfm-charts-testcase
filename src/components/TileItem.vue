@@ -1,13 +1,10 @@
 <template>
 <v-skeleton-loader :loading="loading" type="card">
-  <v-card max-width="375" class="mx-auto">
-        <!-- <v-card-title class="title"> -->
+  <v-card max-width="375" class="mx-auto" @click="$emit('click')">
           <div class="title">
-            <!-- <router-link :to="`music/${value.title.toLowerCase()}`">{{ value.title }}</router-link> -->
-          <div @click="$emit('click', value.title)" >{{ value.title }}</div>
-          <div>{{ value.subtitle }}</div>
+          <v-list-item-title>{{ toTitleCase(value.title) }}</v-list-item-title>
+          <v-list-item-title>{{ toTitleCase(value.subtitle) }}</v-list-item-title>
           </div>
-        <!-- </v-card-title> -->
     <v-img :src="img.large" height="300px" dark>
       <v-row class="fill-height">
         <v-spacer></v-spacer>
@@ -29,13 +26,19 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import { img } from '../mixins'
 export default {
+    mixins: [img],
     props: { value: Object },
     computed: {
-      ...mapGetters(['loading']),
-        img({ value }){
-            return value.image.reduce((cur, v) => ({ ...cur, [v.size]: v['#text']}), {})
-        }
+      ...mapGetters(['loading'])
+    },
+    methods: {
+      toTitleCase(v = '') {
+        return v.split(' ')
+          .map(s => s.slice(0, 1).toUpperCase() + s.slice(1).toLowerCase())
+            .join(' ')
+      }
     }
 }
 </script>
